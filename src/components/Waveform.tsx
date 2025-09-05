@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Play, Pause, SkipBack, SkipForward } from 'lucide-react';
+import WaveSurfer from 'wavesurfer.js';
 
 interface WaveformProps {
   audioUrl: string;
@@ -15,22 +16,33 @@ interface WaveformProps {
 export function Waveform({ audioUrl, duration, currentTime, onTimeChange, isPlaying, onPlayPause }: WaveformProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [waveformData, setWaveformData] = useState<number[]>([]);
+  const wavesurferRef = useRef<WaveSurfer | null>(null);
 
-  // Generate mock waveform data
+  // Generate waveform from actual audio using WaveSurfer built-in exportPeaks method
   useEffect(() => {
-    const generateWaveform = () => {
-      const points = 200;
-      const data = Array.from({ length: points }, (_, i) => {
-        // Create a more realistic waveform pattern
-        const base = Math.sin(i * 0.1) * 0.3;
-        const variation = Math.random() * 0.7;
-        const peak = Math.sin(i * 0.02) * 0.4;
-        return Math.max(0.1, Math.min(1, base + variation + peak));
-      });
-      setWaveformData(data);
-    };
+    if (!audioUrl) return;
 
-    generateWaveform();
+    const ws = WaveSurfer.create({
+      container: document.createElement('div'), // hidden container
+      url: audioUrl,
+      interact: false,
+    });
+
+    wavesurferRef.current = ws;
+
+    ws.on('ready', () => {
+      // Use the built-in exportPeaks method to get waveform data
+      const peaks = ws.exportPeaks({ maxLength: 200 });
+      if (peaks.length > 0) {
+        // Take the first channel and normalize the values
+        setWaveformData(peaks[0].map(Math.abs));
+      }
+    });
+
+    return () => {
+      ws.destroy();
+      wavesurferRef.current = null;
+    };
   }, [audioUrl]);
 
   useEffect(() => {
@@ -51,22 +63,20 @@ export function Waveform({ audioUrl, duration, currentTime, onTimeChange, isPlay
       const x = index * barWidth;
       const y = (height - barHeight) / 2;
 
-      // Color based on progress - get colors from CSS custom properties
       const isPlayed = index / waveformData.length <= progressRatio;
       const isDark = document.documentElement.classList.contains('dark');
-      
+
       if (isPlayed) {
-        ctx.fillStyle = '#d4183d'; // Keep red consistent in both modes
+        ctx.fillStyle = '#d4183d';
       } else {
-        ctx.fillStyle = isDark ? '#44403c' : '#e9ebef'; // Dark gray for dark mode, light gray for light mode
+        ctx.fillStyle = isDark ? '#44403c' : '#e9ebef';
       }
-      
+
       ctx.fillRect(x, y, Math.max(1, barWidth - 1), barHeight);
     });
 
-    // Draw progress indicator
     const progressX = progressRatio * width;
-    ctx.fillStyle = '#d4183d'; // Keep progress indicator red in both modes
+    ctx.fillStyle = '#d4183d';
     ctx.fillRect(progressX - 1, 0, 2, height);
 
   }, [waveformData, currentTime, duration]);
@@ -79,7 +89,7 @@ export function Waveform({ audioUrl, duration, currentTime, onTimeChange, isPlay
     const x = event.clientX - rect.left;
     const clickRatio = x / rect.width;
     const newTime = clickRatio * duration;
-    
+
     onTimeChange(newTime);
   };
 
@@ -106,7 +116,7 @@ export function Waveform({ audioUrl, duration, currentTime, onTimeChange, isPlay
           >
             <SkipBack className="w-4 h-4" />
           </Button>
-          
+
           <Button
             variant="ghost"
             size="sm"
@@ -115,7 +125,7 @@ export function Waveform({ audioUrl, duration, currentTime, onTimeChange, isPlay
           >
             {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
           </Button>
-          
+
           <Button
             variant="ghost"
             size="sm"

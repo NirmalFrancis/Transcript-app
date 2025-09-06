@@ -138,154 +138,68 @@ export default function App() {
     setPlaybackRate(rate);
     if (audioRef.current) {
       audioRef.current.playbackRate = rate;
+
     }
   };
 
-  // Reset audio
-  const handleReset = () => {
-    setCurrentTime(0);
-    setIsPlaying(false);
-    if (audioRef.current) {
-      audioRef.current.currentTime = 0;
-      audioRef.current.pause();
-    }
+  const handleExportCSV = () => {
+    if (!mom) return;
+
+    const rows = mom.action_items.map(
+      (item: any) => `${item.owner},${item.task},${item.deadline || "N/A"}`
+    );
+    const csvContent = "Owner,Task,Deadline\n" + rows.join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "action_items.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
-  // Initialize dark mode on mount
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, []);
+  //   return (
+  //     <div className="App p-4 max-w-xl mx-auto">
+  //       <h1 className="text-2xl font-bold mb-4">Audio Transcription</h1>
 
-  // Toggle dark mode
-  const toggleDarkMode = () => {
-    const newMode = !isDarkMode;
-    setIsDarkMode(newMode);
-    
-    // Update HTML class and localStorage
-    if (newMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    localStorage.setItem('darkMode', JSON.stringify(newMode));
-  };
+  //       <AudioUploader onTranscript={handleTranscript} />
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+  //       {/* Show audio player */}
+  //       {audioUrl && (
+  //         <div className="mt-4">
+  //           <audio controls src={audioUrl} className="w-full" />
+  //         </div>
+  //       )}
 
-  const getTabIcon = (tabValue: string) => {
-    switch (tabValue) {
-      case 'transcript': return <MessageSquare className="w-4 h-4" />;
-      case 'summary': return <Brain className="w-4 h-4" />;
-      default: return null;
-    }
-  };
+  //       {/* Show transcript */}
+  //       {transcript && (
+  //         <pre className="bg-gray-100 p-4 mt-4 rounded-lg text-sm">
+  //           {transcript}
+  //         </pre>
+  //       )}
+  //     </div>
+  //   );
+  // }
 
   return (
-    <div className="min-h-screen bg-background transition-colors duration-300">
-      {/* Header */}
-      <div className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary/70 rounded-lg flex items-center justify-center">
-                  <Mic className="w-4 h-4 text-primary-foreground" />
-                </div>
-                <div>
-                  <h1 className="font-medium">MeetingMind</h1>
-                  <p className="text-xs text-muted-foreground">AI-Powered Meeting Transcription</p>
-                </div>
-              </div>
-              
-              {audioData && (
-                <>
-                  <Separator orientation="vertical" className="h-8" />
-                  <div className="flex items-center space-x-2">
-                    <FileAudio className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">{audioData.name}</span>
-                    <Badge variant="secondary" className="text-xs">
-                      {formatTime(audioData.duration)}
-                    </Badge>
-                  </div>
-                </>
-              )}
-            </div>
+    <div className="App p-4 max-w-xl mx-auto">
+      <h1 className="text-7xl font-bold mb-4"></h1>
+      <h1
+        className="text-7xl
+       font-bold mb-4"
+      ></h1>
 
-            <div className="flex items-center space-x-2">
-              {audioData && (
-                <>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleReset}
-                    className="h-8"
-                  >
-                    <RotateCcw className="w-4 h-4 mr-1" />
-                    Reset
-                  </Button>
-                  
-                  <div className="flex items-center space-x-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handlePlaybackRateChange(0.75)}
-                      className={`h-7 px-2 text-xs ${playbackRate === 0.75 ? 'bg-primary text-primary-foreground' : ''}`}
-                    >
-                      0.75x
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handlePlaybackRateChange(1)}
-                      className={`h-7 px-2 text-xs ${playbackRate === 1 ? 'bg-primary text-primary-foreground' : ''}`}
-                    >
-                      1x
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handlePlaybackRateChange(1.25)}
-                      className={`h-7 px-2 text-xs ${playbackRate === 1.25 ? 'bg-primary text-primary-foreground' : ''}`}
-                    >
-                      1.25x
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handlePlaybackRateChange(1.5)}
-                      className={`h-7 px-2 text-xs ${playbackRate === 1.5 ? 'bg-primary text-primary-foreground' : ''}`}
-                    >
-                      1.5x
-                    </Button>
-                  </div>
+      {/* 👇 This is the correct place */}
+      <AudioUploader onTranscript={handleTranscript} />
 
-                  <Separator orientation="vertical" className="h-6" />
-                </>
-              )}
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleDarkMode}
-                className="h-8 w-8 p-0"
-              >
-                {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-              </Button>
-
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                <Settings className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
+      {/* Show audio player */}
+      {audioUrl && (
+        <div className="mt-4">
+          <audio controls src={audioUrl} className="w-full" />
         </div>
+
       </div>
 
       <div className="container mx-auto px-4 py-6">
@@ -427,72 +341,47 @@ export default function App() {
                   </div>
                 </Card> */}
 
-                {/* Meeting Stats */}
-                {/* <Card className="p-4">
-                  <h4 className="font-medium mb-3">Meeting Stats</h4>
-                  
-                  <div className="space-y-3 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Duration:</span>
-                      <span className="font-medium">{formatTime(audioData.duration)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Progress:</span>
-                      <span className="font-medium">
-                        {Math.round((currentTime / audioData.duration) * 100)}%
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Speakers:</span>
-                      <span className="font-medium">4 detected</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Words/min:</span>
-                      <span className="font-medium">165 avg</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Action items:</span>
-                      <span className="font-medium">4 found</span>
-                    </div>
-                  </div>
-                </Card> */}
+      {/* Show transcript */}
+      {transcript && (
+        <div className="mx-2 overflow-x-hidden whitespace-pre-wrap break-words ">
+          {transcript}
+        </div>
+      )}
 
-                {/* Quick Actions */}
-                <Card className="p-4">
-                  <h4 className="font-medium mb-3">Quick Actions</h4>
-                  
-                  <div className="space-y-2">
-                    <Button variant="outline" className="w-full justify-start" size="sm">
-                      <MessageSquare className="w-4 h-4 mr-2" />
-                      Export Transcript
-                    </Button>
-                    <Button variant="outline" className="w-full justify-start" size="sm">
-                      <Brain className="w-4 h-4 mr-2" />
-                      Export Summary
-                    </Button>
-                    <Button variant="outline" className="w-full justify-start" size="sm">
-                      <FileAudio className="w-4 h-4 mr-2" />
-                      Export MoM
-                    </Button>
-                  </div>
-                </Card>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Hidden Audio Element */}
-      <audio
-        ref={audioRef}
-        onLoadedMetadata={() => {
-          if (audioRef.current) {
-            audioRef.current.volume = volume;
-            audioRef.current.playbackRate = playbackRate;
-          }
-        }}
-        onEnded={() => setIsPlaying(false)}
-      />
+      {/* 👇 Add MoM display here */}
+      {mom && (
+        <div className="bg-white p-4 mt-4 rounded-lg shadow">
+          <h2 className="text-xl font-semibold mb-2">Minutes of Meeting</h2>
+          <p>
+            <strong>Date:</strong> {mom.date}
+          </p>
+          <p>
+            <strong>Participants:</strong> {mom.participants.join(", ")}
+          </p>
+          <p>
+            <strong>Agenda:</strong> {mom.agenda}
+          </p>
+          <p>
+            <strong>Action Items:</strong>
+          </p>
+          <ul className="list-disc ml-6">
+            {mom.action_items.map((item: any, idx: number) => (
+              <li key={idx}>
+                {item.owner} will do <em>{item.task}</em> by{" "}
+                {item.deadline || "N/A"}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      <button
+        onClick={handleExportCSV}
+        className="mt-2 px-4 py-2 bg-white text-blue-600 borderborder-blue-600 rounded hover:bg-blue-50"
+      >
+        Export Action Items as CSV
+      </button>
     </div>
   );
 }
+
+export default App;

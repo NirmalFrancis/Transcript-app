@@ -40,7 +40,7 @@ export const TranscriptPanel: React.FC<Props> = ({ transcript, currentTime, onTi
     return colors[speakerIndex % colors.length] || colors[0];
   };
 
-  const isCurrentSegment = (segment: TranscriptSegment) => {
+ const isCurrentSegment = (segment: TranscriptSegment) => {
     if (!currentTime) return false;
     return currentTime >= segment.startTime && currentTime <= segment.endTime;
   };
@@ -109,6 +109,7 @@ export const TranscriptPanel: React.FC<Props> = ({ transcript, currentTime, onTi
             <p className="text-sm leading-relaxed">{segment.text}</p>
           </Card>
         ))}
+
       </div>
     </div>
   );

@@ -16,8 +16,7 @@ export function AudioUploader({ onAudioLoad, onTranscriptionComplete }: AudioUpl
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -54,45 +53,26 @@ export function AudioUploader({ onAudioLoad, onTranscriptionComplete }: AudioUpl
     }
   };
 
-  const startRecording = () => {
-    setIsRecording(true);
-    setRecordingTime(0);
-    recordingTimerRef.current = setInterval(() => {
-      setRecordingTime(prev => prev + 1);
-    }, 1000);
-  };
+      const data = await res.json();
 
-  const stopRecording = () => {
-    setIsRecording(false);
-    if (recordingTimerRef.current) {
-      clearInterval(recordingTimerRef.current);
+      // Extract a clean transcript from Whisper response
+      const transcript =
+        data.text || data.segments?.map((seg: any) => seg.text).join(" ") || "";
+
+      // Send transcript and audio URL to parent
+      onTranscript(data.transcript, URL.createObjectURL(file), data.mom);
+
+      console.log("Transcript:", transcript);
+    } catch (err) {
+      console.error("Upload failed", err);
+    } finally {
+      setIsUploading(false);
     }
-    
-    // Simulate recording completion with demo data
-    onAudioLoad({
-      url: '/demo-audio.mp3', // This would be the actual recording
-      duration: recordingTime,
-      name: `Recording ${new Date().toLocaleString()}`
-    });
   };
-
-  const loadDemoAudio = () => {
-    onAudioLoad({
-      url: '/demo-audio.mp3',
-      duration: 1847, // ~30 minutes
-      name: 'Team Standup - March 15th.mp3'
-    });
-  };
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   return (
     <Card className="p-6 border-2 border-dashed border-border hover:border-primary/50 transition-colors">
       <div className="text-center space-y-4">
+
         <div className="flex justify-center space-x-4">
           <Button
             variant="outline"
@@ -126,12 +106,15 @@ export function AudioUploader({ onAudioLoad, onTranscriptionComplete }: AudioUpl
 
         {/* <Button
           variant="default"
+
           size="lg"
-          onClick={loadDemoAudio}
-          className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isUploading}
+          className="flex items-center justify-center space-x-2"
         >
-          Load Demo Meeting
-        </Button> */}
+          <Upload className="w-4 h-4" />
+          <span>{isUploading ? "Uploading..." : "Upload Audio"}</span>
+        </Button>
 
         <input
           ref={fileInputRef}

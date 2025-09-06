@@ -22,6 +22,7 @@ import {
   Brain,
   MessageSquare
 } from 'lucide-react';
+import { TranscriptionResult } from './services/apiService';
 
 interface AudioData {
   url: string;
@@ -31,6 +32,7 @@ interface AudioData {
 
 export default function App() {
   const [audioData, setAudioData] = useState<AudioData | null>(null);
+  const [transcriptionResult, setTranscriptionResult] = useState<TranscriptionResult | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [volume, setVolume] = useState(1);
@@ -50,7 +52,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('transcript');
 
   const audioRef = useRef<HTMLAudioElement>(null);
-  const animationFrameRef = useRef<number>();
+  const animationFrameRef = useRef<number >();
 
   // Update current time while playing
   useEffect(() => {
@@ -87,6 +89,12 @@ export default function App() {
       audioRef.current.src = data.url;
       audioRef.current.load();
     }
+  };
+
+  // Handle transcription completion
+  const handleTranscriptionComplete = (result: TranscriptionResult) => {
+    setTranscriptionResult(result);
+    console.log('Transcription completed:', result);
   };
 
   // Toggle play/pause
@@ -291,7 +299,10 @@ export default function App() {
               </p>
             </div>
             
-            <AudioUploader onAudioLoad={handleAudioLoad} />
+            <AudioUploader 
+              onAudioLoad={handleAudioLoad} 
+              onTranscriptionComplete={handleTranscriptionComplete}
+            />
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
               <Card className="p-4">
@@ -351,6 +362,7 @@ export default function App() {
                   <TabsContent value="transcript" className="mt-4">
                     <div className="h-[600px]">
                       <TranscriptPanel
+                        transcript={transcriptionResult?.transcription.transcript}
                         currentTime={currentTime}
                         onTimeJump={handleTimeChange}
                       />
@@ -362,6 +374,7 @@ export default function App() {
                       <AISummary
                         audioName={audioData.name}
                         duration={audioData.duration}
+                        summaryData={transcriptionResult?.summary}
                         onTimeJump={handleTimeChange}
                       />
                     </div>

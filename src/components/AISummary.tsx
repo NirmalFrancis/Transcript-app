@@ -17,6 +17,30 @@ import {
 interface AISummaryProps {
   audioName: string;
   duration: number;
+  summaryData?: {
+    executiveSummary: string;
+    keyDecisions: string[];
+    actionItems: Array<{
+      task: string;
+      assignee: string;
+      priority: 'high' | 'medium' | 'low';
+      dueDate?: string;
+      timestamp: number;
+    }>;
+    discussionPoints: Array<{
+      topic: string;
+      description: string;
+      timestamp: number;
+      importance: 'high' | 'medium' | 'low';
+    }>;
+    nextSteps: string[];
+    sentiment: {
+      overall: 'positive' | 'neutral' | 'negative';
+      score: number;
+      highlights: string[];
+    };
+  };
+  onTimeJump: (time: number) => void;
 }
 
 interface ActionItem {
@@ -114,12 +138,17 @@ const mockSentiment: SentimentData = {
   ]
 };
 
-export function AISummary({ audioName, duration, onTimeJump }: AISummaryProps & { onTimeJump: (time: number) => void }) {
+export function AISummary({ audioName, duration, summaryData, onTimeJump }: AISummaryProps) {
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
+
+  // Use real data if available, otherwise fall back to mock data
+  const actionItems = summaryData?.actionItems || mockActionItems;
+  const keyPoints = summaryData?.discussionPoints || mockKeyPoints;
+  const sentiment = summaryData?.sentiment || mockSentiment;
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -194,13 +223,13 @@ export function AISummary({ audioName, duration, onTimeJump }: AISummaryProps & 
         <div className="flex items-center space-x-2 mb-3">
           <CheckCircle className="w-5 h-5 text-green-600" />
           <h4 className="font-medium">Action Items</h4>
-          <Badge variant="secondary">{mockActionItems.length}</Badge>
+          <Badge variant="secondary">{actionItems.length}</Badge>
         </div>
 
         <div className="space-y-3">
-          {mockActionItems.map((item) => (
+          {actionItems.map((item, index) => (
             <div 
-              key={item.id}
+              key={index}
               className="p-3 rounded-lg border bg-card hover:bg-muted/30 cursor-pointer transition-colors"
               onClick={() => onTimeJump(item.timestamp)}
             >
@@ -240,9 +269,9 @@ export function AISummary({ audioName, duration, onTimeJump }: AISummaryProps & 
         </div>
 
         <div className="space-y-3">
-          {mockKeyPoints.map((point) => (
+          {keyPoints.map((point, index) => (
             <div 
-              key={point.id}
+              key={index}
               className="p-3 rounded-lg border bg-card hover:bg-muted/30 cursor-pointer transition-colors"
               onClick={() => onTimeJump(point.timestamp)}
             >

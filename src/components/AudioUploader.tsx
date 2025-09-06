@@ -1,32 +1,56 @@
 import React, { useState, useRef } from 'react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
-import { Upload, Mic, MicOff, Play, Pause } from 'lucide-react';
+import { Upload, Mic, MicOff, Play, Pause, Loader2 } from 'lucide-react';
+import { apiService, TranscriptionResult } from '../services/apiService';
 
 interface AudioUploaderProps {
   onAudioLoad: (audioData: { url: string; duration: number; name: string }) => void;
+  onTranscriptionComplete?: (result: TranscriptionResult) => void;
 }
 
-export function AudioUploader({ onAudioLoad }: AudioUploaderProps) {
+export function AudioUploader({ onAudioLoad, onTranscriptionComplete }: AudioUploaderProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && file.type.startsWith('audio/')) {
-      const url = URL.createObjectURL(file);
-      const audio = new Audio(url);
-      audio.addEventListener('loadedmetadata', () => {
-        onAudioLoad({
-          url,
-          duration: audio.duration,
-          name: file.name
+      setIsProcessing(true);
+      setError(null);
+      
+      try {
+        // Create audio URL for immediate playback
+        const url = URL.createObjectURL(file);
+        const audio = new Audio(url);
+        
+        audio.addEventListener('loadedmetadata', () => {
+          onAudioLoad({
+            url,
+            duration: audio.duration,
+            name: file.name
+          });
         });
-      });
+
+        // Send to backend for transcription
+        const result = await apiService.uploadAndTranscribe(file);
+        
+        if (onTranscriptionComplete) {
+          onTranscriptionComplete(result);
+        }
+        
+      } catch (err) {
+        console.error('Upload/transcription error:', err);
+        setError(err instanceof Error ? err.message : 'Upload failed');
+      } finally {
+        setIsProcessing(false);
+      }
     }
   };
 
@@ -75,9 +99,14 @@ export function AudioUploader({ onAudioLoad }: AudioUploaderProps) {
             size="lg"
             onClick={() => fileInputRef.current?.click()}
             className="flex items-center space-x-2"
+            disabled={isProcessing}
           >
-            <Upload className="w-4 h-4" />
-            <span>Upload Audio</span>
+            {isProcessing ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Upload className="w-4 h-4" />
+            )}
+            <span>{isProcessing ? 'Processing...' : 'Upload Audio'}</span>
           </Button>
           
           <Button
@@ -113,8 +142,14 @@ export function AudioUploader({ onAudioLoad }: AudioUploaderProps) {
         />
 
         <p className="text-sm text-muted-foreground">
-          Supported formats: MP3, WAV, M4A, OGG
+          Supported formats: MP3, WAV, M4A, OGG, WebM, MP4, AAC
         </p>
+        
+        {error && (
+          <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
+            Error: {error}
+          </div>
+        )}
       </div>
     </Card>
   );

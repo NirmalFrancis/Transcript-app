@@ -4,7 +4,8 @@ import { Card } from "./ui/card";
 import { Upload } from "lucide-react";
 
 interface AudioUploaderProps {
-  onTranscript: (transcript: string, audioUrl?: string) => void;
+  //onTranscript: (transcript: string, audioUrl?: string) => void;
+  onTranscript: (transcript: string, audioUrl?: string, momData?: any) => void;
 }
 
 export function AudioUploader({ onTranscript }: AudioUploaderProps) {
@@ -35,7 +36,7 @@ export function AudioUploader({ onTranscript }: AudioUploaderProps) {
         data.text || data.segments?.map((seg: any) => seg.text).join(" ") || "";
 
       // Send transcript and audio URL to parent
-      onTranscript(transcript, URL.createObjectURL(file));
+      onTranscript(data.transcript, URL.createObjectURL(file), data.mom);
 
       console.log("Transcript:", transcript);
     } catch (err) {
@@ -44,7 +45,6 @@ export function AudioUploader({ onTranscript }: AudioUploaderProps) {
       setIsUploading(false);
     }
   };
-
   return (
     <Card className="p-6 border-2 border-dashed border-border hover:border-primary/50 transition-colors">
       <div className="text-center space-y-4">
@@ -66,6 +66,7 @@ export function AudioUploader({ onTranscript }: AudioUploaderProps) {
           onChange={handleFileUpload}
           className="hidden"
         />
+
         <p className="text-sm text-muted-foreground">
           Supported formats: MP3, WAV, M4A, OGG
         </p>

@@ -21,14 +21,21 @@ export const TranscriptPanel: React.FC<Props> = ({ fullTranscript }) => {
   // The backend integration should replace the mock below.
 
   // Placeholder text while backend is not connected.
-  const placeholder = fullTranscript ?? "Transcript will appear here once the backend provides it.";
+  const placeholder =
+    fullTranscript ??
+    "Transcript will appear here once the backend provides it.";
 
   return (
     <div className="p-4">
       <h3 className="text-lg font-medium mb-3">Transcript</h3>
       <div
-        className="whitespace-pre-wrap text-sm leading-relaxed bg-muted p-3 rounded-md overflow-auto max-h-[60vh]"
+        className="whitespace-pre-wrap break-words text-sm leading-relaxed bg-muted p-3 rounded-md overflow-auto max-h-[60vh]"
         aria-live="polite"
+        style={{
+          whiteSpace: "pre-wrap",
+          overflowWrap: "break-word",
+          wordBreak: "break-word",
+        }}
       >
         {placeholder}
       </div>

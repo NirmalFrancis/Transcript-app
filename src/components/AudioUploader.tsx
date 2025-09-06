@@ -1,108 +1,63 @@
-import React, { useState, useRef } from 'react';
-import { Button } from './ui/button';
-import { Card } from './ui/card';
-import { Upload, Mic, MicOff, Play, Pause } from 'lucide-react';
+import React, { useState, useRef } from "react";
+import { Button } from "./ui/button";
+import { Card } from "./ui/card";
+import { Upload } from "lucide-react";
 
 interface AudioUploaderProps {
-  onAudioLoad: (audioData: { url: string; duration: number; name: string }) => void;
+  onTranscript: (transcript: string, audioUrl?: string) => void;
 }
 
-export function AudioUploader({ onAudioLoad }: AudioUploaderProps) {
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingTime, setRecordingTime] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
+export function AudioUploader({ onTranscript }: AudioUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0];
-    if (file && file.type.startsWith('audio/')) {
-      const url = URL.createObjectURL(file);
-      const audio = new Audio(url);
-      audio.addEventListener('loadedmetadata', () => {
-        onAudioLoad({
-          url,
-          duration: audio.duration,
-          name: file.name
-        });
+    if (!file) return;
+
+    setIsUploading(true);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("http://127.0.0.1:5000/transcribe", {
+        method: "POST",
+        body: formData,
       });
+
+      const data = await res.json();
+
+      // Extract a clean transcript from Whisper response
+      const transcript =
+        data.text || data.segments?.map((seg: any) => seg.text).join(" ") || "";
+
+      // Send transcript and audio URL to parent
+      onTranscript(transcript, URL.createObjectURL(file));
+
+      console.log("Transcript:", transcript);
+    } catch (err) {
+      console.error("Upload failed", err);
+    } finally {
+      setIsUploading(false);
     }
-  };
-
-  const startRecording = () => {
-    setIsRecording(true);
-    setRecordingTime(0);
-    recordingTimerRef.current = setInterval(() => {
-      setRecordingTime(prev => prev + 1);
-    }, 1000);
-  };
-
-  const stopRecording = () => {
-    setIsRecording(false);
-    if (recordingTimerRef.current) {
-      clearInterval(recordingTimerRef.current);
-    }
-    
-    // Simulate recording completion with demo data
-    onAudioLoad({
-      url: '/demo-audio.mp3', // This would be the actual recording
-      duration: recordingTime,
-      name: `Recording ${new Date().toLocaleString()}`
-    });
-  };
-
-  const loadDemoAudio = () => {
-    onAudioLoad({
-      url: '/demo-audio.mp3',
-      duration: 1847, // ~30 minutes
-      name: 'Team Standup - March 15th.mp3'
-    });
-  };
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   return (
     <Card className="p-6 border-2 border-dashed border-border hover:border-primary/50 transition-colors">
       <div className="text-center space-y-4">
-        <div className="flex justify-center space-x-4">
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={() => fileInputRef.current?.click()}
-            className="flex items-center space-x-2"
-          >
-            <Upload className="w-4 h-4" />
-            <span>Upload Audio</span>
-          </Button>
-          
-          <Button
-            variant={isRecording ? "destructive" : "outline"}
-            size="lg"
-            onClick={isRecording ? stopRecording : startRecording}
-            className="flex items-center space-x-2"
-          >
-            {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-            <span>{isRecording ? `Recording ${formatTime(recordingTime)}` : 'Record Audio'}</span>
-          </Button>
-        </div>
-
-        {/* <div className="text-muted-foreground">
-          or
-        </div> */}
-
-        {/* <Button
-          variant="default"
+        <Button
+          variant="outline"
           size="lg"
-          onClick={loadDemoAudio}
-          className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isUploading}
+          className="flex items-center justify-center space-x-2"
         >
-          Load Demo Meeting
-        </Button> */}
+          <Upload className="w-4 h-4" />
+          <span>{isUploading ? "Uploading..." : "Upload Audio"}</span>
+        </Button>
 
         <input
           ref={fileInputRef}
@@ -111,7 +66,6 @@ export function AudioUploader({ onAudioLoad }: AudioUploaderProps) {
           onChange={handleFileUpload}
           className="hidden"
         />
-
         <p className="text-sm text-muted-foreground">
           Supported formats: MP3, WAV, M4A, OGG
         </p>
